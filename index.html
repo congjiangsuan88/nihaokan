@@ -146,72 +146,71 @@
             }
         }
 
-      async function generatePoster() {
+async function generatePoster() {
     lOverlay.style.display = 'flex';
     lOverlay.style.opacity = '1';
-    setProgress(30, "正在同步像素...");
+    setProgress(20, "清理缓存..."); // 增加清理步骤的提示
     qrArea.style.display = 'block'; 
 
     const container = document.getElementById('poster-container');
     const originalStyle = container.style.cssText;
 
-    // 1. 强制重置样式，消除偏移
+    // 1. 强制归位（解决白边）
     container.style.position = 'fixed';
     container.style.top = '0';
     container.style.left = '0';
     container.style.transform = 'none';
     container.style.zIndex = '10000';
 
-    // 2. 给予浏览器 100ms 缓冲，防止绘图时数据未就绪
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // 等待 UI 渲染稳定
+    await new Promise(r => setTimeout(r, 150));
 
     try {
+        setProgress(50, "像素转换中...");
         const canvas = await html2canvas(container, {
-            useCORS: false,      // 因为我们已经是本地 Base64 了，关掉 CORS 检查更稳
-            allowTaint: true,    // 允许污染，因为我们追求的是结果
-            scale: 2,            // 关键：从 3 降到 2，极大提高手机合成成功率
+            useCORS: true,
+            scale: 2,               // 保持在 2 倍，3 倍极其容易触发手机内存溢出导致失败
             width: 375,
             height: 667,
-            x: 0,
-            y: 0,
-            scrollX: 0,
-            scrollY: 0,
             backgroundColor: '#1a1a1a',
-            imageTimeout: 0      // 禁用超时检查
+            removeContainer: true   // 自动清理临时缓存
         });
 
-        setProgress(90, "生成预览图...");
+        setProgress(80, "渲染预览图...");
         
-        // 3. 这里的 0.7 是图片质量压缩比，如果还失败，可以改成 0.5
-        const finalData = canvas.toDataURL('image/jpeg', 0.7);
-        previewImg.src = finalData;
+        // 关键修复：如果图片依然出不来，降低质量参数到 0.6
+        const imgData = canvas.toDataURL('image/jpeg', 0.6);
+        previewImg.src = imgData;
         
-        setProgress(100, "制作完成");
-        
+        // 核心内存优化：手动销毁 canvas 对象，释放手机内存
+        canvas.width = 0;
+        canvas.height = 0;
+
+        setProgress(100, "成功生成");
         setTimeout(() => {
             document.getElementById('preview-layer').style.display = 'flex';
             lOverlay.style.display = 'none';
         }, 300);
+
     } catch (err) {
-        console.error("捕获到错误:", err);
-        // 如果依然失败，尝试最保守的 1 倍缩放
-        alert("合成环境不稳定，正在尝试低压模式...");
-        retryGenerateLowRes(container, originalStyle);
+        console.error("详细错误信息:", err);
+        // 如果失败，尝试最原始的 1 倍渲染（保底方案）
+        retryLowRes();
     } finally {
         container.style.cssText = originalStyle;
-        qrArea.style.display = 'none'; 
+        qrArea.style.display = 'none';
     }
 }
 
-// 备用应急函数：如果 2 倍依然失败，强制使用 1 倍
-async function retryGenerateLowRes(container, oldStyle) {
+async function retryLowRes() {
+    const container = document.getElementById('poster-container');
     try {
-        const canvas = await html2canvas(container, { scale: 1, width: 375, height: 667 });
-        previewImg.src = canvas.toDataURL('image/jpeg', 0.6);
+        const canvas = await html2canvas(container, { scale: 1 });
+        previewImg.src = canvas.toDataURL('image/jpeg', 0.5);
         document.getElementById('preview-layer').style.display = 'flex';
         lOverlay.style.display = 'none';
     } catch(e) {
-        alert("当前设备内存不足，请关闭后台多余应用后重试。");
+        alert("设备内存不足，请关闭其他应用或重启浏览器再试。");
         lOverlay.style.display = 'none';
     }
 }
