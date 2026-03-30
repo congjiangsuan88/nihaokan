@@ -20,7 +20,7 @@
         @media screen and (max-height: 650px) { #poster-container { transform: scale(0.8); } }
 
         .bg-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        #bg-image { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 1.2s; }
+        #bg-image { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 1s; }
         .bg-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.7) 100%); z-index: 2; }
         
         .content { position: relative; z-index: 10; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #fff; text-align: center; padding: 45px; }
@@ -35,7 +35,6 @@
         .footer { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: center; gap: 20px; z-index: 50; }
         .btn { padding: 12px 30px; border: 1px solid rgba(255,255,255,0.25); border-radius: 25px; color: #fff; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); cursor: pointer; font-size: 14px; }
 
-        /* --- 进度条样式回归 --- */
         #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,1); color:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:100; transition: opacity 0.5s; }
         .progress-box { width: 180px; height: 2px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 20px; }
         #progress-bar { width: 0%; height: 100%; background: #f1c40f; transition: width 0.3s; }
@@ -62,7 +61,7 @@
 
     <div id="loading-overlay">
         <div class="progress-box"><div id="progress-bar"></div></div>
-        <div class="loading-text" id="loading-text">正在寻找光...</div>
+        <div class="loading-text" id="loading-text">正在初始化...</div>
     </div>
 
     <div class="footer">
@@ -100,34 +99,49 @@
             if(text) lText.innerText = text;
         }
 
+        // 核心修复：强制将 Blob 转为真正的 Base64
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
         async function init() {
             if(rewardQrBase64) document.getElementById('reward-qr-img').src = rewardQrBase64;
-            setProgress(20, "正在寻找光...");
+            setProgress(10, "连接审美接口...");
             
             try {
-                const quotePromise = fetch('https://v1.hitokoto.cn/?c=d&c=i').then(r => r.json());
-                const randomID = Math.floor(Math.random() * 1000);
-                const imgPromise = fetch(`https://picsum.photos/1080/1920?random=${randomID}`).then(r => r.blob());
-
-                const qData = await quotePromise;
-                setProgress(60, "捕捉灵感中...");
-                
-                const imgBlob = await imgPromise;
-                setProgress(90, "即将呈现...");
-
+                // 1. 获取文案
+                const qRes = await fetch('https://v1.hitokoto.cn/?c=d&c=i');
+                const qData = await qRes.json();
                 quoteElement.innerText = qData.hitokoto;
-                quoteElement.classList.add('show');
+                setProgress(40, "获取随机背景...");
+                
+                // 2. 获取图片并彻底本地化
+                const randomID = Math.floor(Math.random() * 1000);
+                const imgRes = await fetch(`https://picsum.photos/800/1400?random=${randomID}`);
+                const blob = await imgRes.blob();
+                setProgress(70, "处理图像像素...");
+                
+                const base64Data = await blobToBase64(blob);
+                bgImageElement.src = base64Data;
 
-                const objectURL = URL.createObjectURL(imgBlob);
-                bgImageElement.src = objectURL;
                 bgImageElement.onload = () => { 
                     bgImageElement.style.opacity = '1';
-                    setProgress(100);
-                    setTimeout(() => { lOverlay.style.opacity = '0'; setTimeout(()=>lOverlay.style.display='none', 500); }, 300);
+                    quoteElement.classList.add('show');
+                    setProgress(100, "加载完成");
+                    setTimeout(() => { 
+                        lOverlay.style.opacity = '0'; 
+                        setTimeout(() => lOverlay.style.display='none', 500); 
+                    }, 300);
                 };
             } catch (e) {
+                console.error(e);
                 lOverlay.style.display = 'none';
-                quoteElement.innerText = "万物可爱，人间值得。";
+                quoteElement.innerText = "心之所向，便是阳光。";
                 quoteElement.classList.add('show');
             }
         }
@@ -135,28 +149,50 @@
         async function generatePoster() {
             lOverlay.style.display = 'flex';
             lOverlay.style.opacity = '1';
-            setProgress(30, "正在雕琢...");
+            setProgress(30, "正在雕琢海报...");
             qrArea.style.display = 'block'; 
 
             const container = document.getElementById('poster-container');
             const originalStyle = container.style.cssText;
+
+            // 针对手机端：为了防止内存溢出，稍微降低 scale
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            const screenshotScale = isMobile ? 2 : 3; 
+
+            // 瞬移到 0,0 点
             container.style.position = 'fixed';
-            container.style.top = '0'; container.style.left = '0';
-            container.style.transform = 'none'; container.style.zIndex = '10000';
+            container.style.top = '0';
+            container.style.left = '0';
+            container.style.transform = 'none';
+            container.style.zIndex = '10000';
 
             try {
                 const canvas = await html2canvas(container, {
-                    useCORS: true, scale: 3, width: 375, height: 667,
-                    windowWidth: 375, windowHeight: 667, x: 0, y: 0
+                    useCORS: true,
+                    scale: screenshotScale, 
+                    width: 375,
+                    height: 667,
+                    windowWidth: 375,
+                    windowHeight: 667,
+                    x: 0,
+                    y: 0,
+                    scrollX: 0,
+                    scrollY: 0,
+                    logging: false,
+                    backgroundColor: '#1a1a1a'
                 });
+
+                // 压缩质量，防止手机端 Base64 过大无法显示
+                previewImg.src = canvas.toDataURL('image/jpeg', 0.8);
                 setProgress(100, "制作完成");
-                previewImg.src = canvas.toDataURL('image/jpeg', 0.85);
+                
                 setTimeout(() => {
                     document.getElementById('preview-layer').style.display = 'flex';
                     lOverlay.style.display = 'none';
                 }, 400);
             } catch (err) {
-                alert("生成失败");
+                console.error("生成失败原因:", err);
+                alert("生成失败，请刷新页面重试");
                 lOverlay.style.display = 'none';
             } finally {
                 container.style.cssText = originalStyle;
