@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>你好看 | nihaokan.com</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
+        body { font-family: 'Noto Serif SC', serif; background-color: #f8f9fa; }
+        .bento-card { @apply bg-white p-6 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 flex flex-col justify-between; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased">
+
+    <main class="max-w-4xl mx-auto px-6 py-12 md:py-24">
+        <header class="mb-12 text-center md:text-left">
+            <h1 class="text-4xl font-bold tracking-tight text-gray-900">你好看 <span class="text-lg font-normal text-gray-400 ml-2">nihaokan.com</span></h1>
+            <p class="mt-4 text-gray-500">生活，本来就很美。</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-[180px]">
+            
+            <a href="https://mei.nihaokan.com" class="bento-card md:col-span-2 md:row-span-2 bg-gradient-to-br from-rose-50 to-orange-50 group">
+                <div class="flex justify-between items-start">
+                    <span class="text-2xl">✨</span>
+                    <span class="text-xs font-bold tracking-widest uppercase text-orange-400">Featured</span>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold mb-2 group-hover:text-orange-600 transition-colors">每日审美</h2>
+                    <p class="text-sm text-gray-500">治愈系名句壁纸生成器，记录每一个动人瞬间。</p>
+                </div>
+            </a>
+
+            <div class="bento-card bg-slate-50">
+                <span class="text-xl">📸</span>
+                <div>
+                    <h3 class="font-bold">灵感库</h3>
+                    <p class="text-xs text-gray-400">关注我的小红书</p>
+                </div>
+            </div>
+
+            <div class="bento-card">
+                <span class="text-xl">🌿</span>
+                <div>
+                    <h3 class="font-bold">关于站长</h3>
+                    <p class="text-xs text-gray-400">独立开发者 / 审美追求者</p>
+                </div>
+            </div>
+
+            <div class="bento-card md:col-span-3 flex-row items-center space-x-4">
+                <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <p class="text-sm italic text-gray-600">“万物皆有裂痕，那是光照进来的地方。”</p>
+            </div>
+
+        </div>
+
+        <footer class="mt-16 text-center text-xs text-gray-300 tracking-widest">
+            © 2026 NIHAOKAN.COM · ALL RIGHTS RESERVED.
+        </footer>
+    </main>
+
+</body>
+</html>
