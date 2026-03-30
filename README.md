@@ -4,7 +4,7 @@
 
 「你好看」是一个极简、纯粹的在线海报生成工具。它旨在通过精选的治愈系文案与高质量的审美背景，为用户在忙碌的生活中提供一瞬间的慰藉。
 
-✨ **[立即在线体验]([https://congjiangsuan88.github.io/nihaokan/](https://mei.nihaokan.com/))**
+✨ **[立即在线体验]([https://congjiangsuan88.github.io/nihaokan/])**
 
 ---
 
